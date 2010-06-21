@@ -1,7 +1,8 @@
 #!/bin/zsh
 emulate -L zsh
-setopt err_exit
 #setopt xtrace
+
+trap 'echo "Command returned nonzero exit code" >&2' ZERR
 
 # TODO: Add zparseopts support
 
@@ -128,7 +129,19 @@ function box_tool_destructor {
 	box_loaded_tools[$1]=()
 }
 
-# Always grab assert first because box_tool_destructor uses it
+function box_exit {
+	typeset -i i
+	for (( i = $#box_tool_destructors; i > 0; i-- )); do
+		box_tool_destructor $i
+	done
+	unset box_loaded_tools box_tool_destructors
+	unset PROGNAME box_path box_userdir retval
+}
+
+trap 'box_exit' EXIT
+
+grab colors
+trap 'echo "${fg_bold[red]}*${reset_color} Command returned nonzero exit code" >&2; box_exit; exit 127' ZERR
 grab assert
 
 if [[ $PROGNAME == "box" ]]; then
@@ -143,9 +156,4 @@ else
 	$0(:t) "$@"
 fi
 
-typeset -i i
-for (( i = $#box_tool_destructors; i > 0; i-- )); do
-	box_tool_destructor $i
-done
-unset box_loaded_tools box_tool_destructors i
-unset PROGNAME box_path box_userdir retval
+trap '' ZERR
