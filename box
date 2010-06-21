@@ -115,7 +115,7 @@ function grab {
 		if ! box_path_search "$tool"; then
 			box_zmodload "$tool" || return 1
 		else
-			box_tool_constructor "$tool" "$retval"
+			box_tool_constructor "$tool" "$retval" || return 1
 		fi
 	done
 }
