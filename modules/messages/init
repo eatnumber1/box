@@ -1,0 +1,16 @@
+require colors assert
+
+function error {
+	assert "[[ $# -ne 0 ]]"
+	echo "${fg_bold[red]}*${reset_color} $*" >&2
+}
+
+function warning {
+	assert "[[ $# -ne 0 ]]"
+	echo "${fg_bold[yellow]}*${reset_color} $*" >&2
+}
+
+function info {
+	assert "[[ $# -ne 0 ]]"
+	echo "${fg_bold[green]}*${reset_color} $*" >&2
+}

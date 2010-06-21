@@ -1,0 +1,5 @@
+unset -f error
+unset -f warning
+unset -f info
+
+# vim:ft=zsh

@@ -1,0 +1,13 @@
+require messages
+
+function help {
+	info "The available modules are:"
+	local i d
+	for i in "${box_path[@]}"; do
+		for d in "$i"/*; do
+			info "\t${d##*/}"
+		done
+	done
+}
+
+# vim:ft=zsh

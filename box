@@ -1,0 +1,108 @@
+#!/bin/zsh
+emulate -L zsh
+setopt err_exit
+#setopt xtrace
+
+# TODO: Add zparseopts support
+
+typeset -r PROGNAME="${0##*/}"
+
+typeset -a box_path
+typeset -r box_userdir="$HOME/.box"
+if [[ -d "$box_userdir" ]]; then
+	[[ -f "$box_userdir/config" ]] && source "$box_userdir/config"
+	[[ -d "$box_userdir/modules" ]] && box_path+=( "$box_userdir/modules" )
+fi
+
+typeset -ga loaded_modules
+
+function path_search_one {
+	[[ $# != 2 ]] && exit 255
+
+	local i
+	for i in $2/*; do
+		if [[ ${i##*/} == $1 ]]; then
+			retval=( "$i" )
+			return 0
+		fi
+	done
+	return 1
+}
+
+function path_search {
+	[[ $# != 1 ]] && exit 255
+	[[ -z $box_path ]] && exit 255
+	
+	local path_elem
+	for path_elem in "${box_path[@]}"; do
+		path_search_one "$1" "$path_elem" || continue
+
+		retval=( "$path_elem" )
+		return 0
+	done
+	return 1
+}
+
+function module_init_file {
+	[[ -f $* ]] || exit 255
+
+	source $*
+}
+
+function module_init_dir {
+	[[ -d $* ]] || exit 255
+	
+	module_init_file $*/init
+}
+
+function module_init {
+	[[ ! -e $* ]] && exit 255
+	
+	loaded_modules+=( "$*" )
+	if [[ -d $* ]]; then
+		module_init_dir "$@"
+	elif [[ -f $* ]]; then
+		module_init_file "$@"
+	else
+		exit 255
+	fi
+}
+
+function module_is_loaded {
+	[[ -n "$1" && -n ${loaded_modules[(r)*${1}]} ]]
+}
+
+function require {
+	[[ $# == 0 ]] && exit 255
+
+	typeset -a box_modules
+
+	local module
+	for module in "$@"; do
+		module_is_loaded "$module" && continue
+		path_search "$module" || return 1
+		box_modules+=( "$retval/$module" )
+	done
+	
+	for module in "${box_modules[@]}"; do
+		module_init "$module"
+	done
+}
+
+function unload_module {
+	[[ -f "$*/free" ]] && source "$*/free"
+}
+
+require usage
+if ! require "$1"; then
+	usage
+	exit 1
+fi
+"$@"
+
+for module in "${loaded_modules[@]}"; do
+	unload_module "$module"
+done
+unset loaded_modules module
+
+# vim:ts=4 sts=4

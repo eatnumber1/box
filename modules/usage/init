@@ -1,0 +1,3 @@
+function usage {
+	echo "Usage: $PROGNAME module [arguments]..."
+}

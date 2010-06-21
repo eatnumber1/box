@@ -1,0 +1,4 @@
+unset -f assert
+zmodload -u zsh/parameter
+
+# vim:ft=zsh

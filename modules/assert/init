@@ -1,0 +1,14 @@
+require messages
+zmodload zsh/parameter
+
+function assert {
+	[[ $# -ge 1 ]] || exit 255
+
+	if ! eval "$1"; then
+		shift
+		error "Assertion failed at $functrace"
+		exit 255
+	fi
+}
+
+# vim:ft=zsh
