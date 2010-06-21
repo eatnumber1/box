@@ -69,6 +69,7 @@ function tool_init {
 	source "$modfile"
 	generate_free_function_name "$modname"
 	local cleanup="function $retval {; "
+	(( ${+functions[${modname}_init]} )) && cleanup+="unset -f ${modname}_init; "
 	if (( ${+functions[${modname}_free]} )); then
 		cleanup+="${modname}_free; "
 		cleanup+="unset -f ${modname}_free; "
