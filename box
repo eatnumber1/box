@@ -3,6 +3,7 @@ emulate -L zsh
 setopt err_exit
 #setopt xtrace
 
+# TODO: Treat zshmodules as tools
 zmodload zsh/parameter
 
 # TODO: Add zparseopts support
@@ -76,6 +77,7 @@ function tool_init {
 	eval "$cleanup"
 	loaded_tools+=( "$modname" )
 	(( ${+functions[${modname}_init]} )) && ${modname}_init
+	return 0
 }
 
 function tool_is_loaded {
