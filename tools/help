@@ -1,4 +1,10 @@
-require messages
+function help_init {
+	require messages
+}
+
+function help_free {
+	unset -f help
+}
 
 function help {
 	info "The available modules are:"

@@ -1,0 +1,6 @@
+function colors_init {
+	autoload -U colors
+	colors
+}
+
+# vim:ft=zsh

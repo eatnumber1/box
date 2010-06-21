@@ -1,0 +1,9 @@
+function usage_free {
+	unset -f usage
+}
+
+function usage {
+	echo "Usage: $PROGNAME tool [arguments]..."
+}
+
+# vim:ft=zsh

@@ -1,0 +1,19 @@
+function assert_init {
+	require messages
+}
+
+function assert_free {
+	unset -f assert
+}
+
+function assert {
+	[[ $# -ge 1 ]] || exit 255
+
+	if ! eval "$1"; then
+		shift
+		error "Assertion failed at $functrace[1]"
+		exit 255
+	fi
+}
+
+# vim:ft=zsh

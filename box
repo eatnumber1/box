@@ -3,6 +3,8 @@ emulate -L zsh
 setopt err_exit
 #setopt xtrace
 
+zmodload zsh/parameter
+
 # TODO: Add zparseopts support
 
 typeset -r PROGNAME="${0##*/}"
@@ -11,13 +13,22 @@ typeset -a box_path
 typeset -r box_userdir="$HOME/.box"
 if [[ -d "$box_userdir" ]]; then
 	[[ -f "$box_userdir/config" ]] && source "$box_userdir/config"
-	[[ -d "$box_userdir/modules" ]] && box_path+=( "$box_userdir/modules" )
+	[[ -d "$box_userdir/tools" ]] && box_path+=( "$box_userdir/tools" )
 fi
 
-typeset -ga loaded_modules
+# Boostrap functions: These will be replaced once we are fully initialized.
+function assert {
+	if ! eval "$*"; then
+		echo "Assertion failed at $functrace[1]" >&2
+		exit 255
+	fi
+}
+# End bootstrap functions
+
+typeset -ga loaded_tools
 
 function path_search_one {
-	[[ $# != 2 ]] && exit 255
+	assert "[[ $# == 2 ]]"
 
 	local i
 	for i in $2/*; do
@@ -30,8 +41,8 @@ function path_search_one {
 }
 
 function path_search {
-	[[ $# != 1 ]] && exit 255
-	[[ -z $box_path ]] && exit 255
+	assert "[[ $# == 1 ]]"
+	assert "(( $+box_path ))"
 	
 	local path_elem
 	for path_elem in "${box_path[@]}"; do
@@ -43,54 +54,56 @@ function path_search {
 	return 1
 }
 
-function module_init_file {
-	[[ -f $* ]] || exit 255
-
-	source $*
+function generate_free_function_name {
+	# Can't call tools here because this is called during free
+	retval=( "box_internal_${1}_free" )
 }
 
-function module_init_dir {
-	[[ -d $* ]] || exit 255
-	
-	module_init_file $*/init
-}
+function tool_init {
+	assert "[[ $# -eq 2 ]]"
+	local modname="$1" moddir="$2"
+	local modfile="$moddir/$modname"
+	assert "[[ -f $modfile ]]"
 
-function module_init {
-	[[ ! -e $* ]] && exit 255
-	
-	loaded_modules+=( "$*" )
-	if [[ -d $* ]]; then
-		module_init_dir "$@"
-	elif [[ -f $* ]]; then
-		module_init_file "$@"
-	else
-		exit 255
+	source "$modfile"
+	generate_free_function_name "$modname"
+	local cleanup="function $retval {; "
+	if (( ${+functions[${modname}_free]} )); then
+		cleanup+="${modname}_free; "
+		cleanup+="unset -f ${modname}_free; "
 	fi
+	cleanup+="unset -f $retval; }"
+	eval "$cleanup"
+	loaded_tools+=( "$modname" )
+	(( ${+functions[${modname}_init]} )) && ${modname}_init
 }
 
-function module_is_loaded {
-	[[ -n "$1" && -n ${loaded_modules[(r)*${1}]} ]]
+function tool_is_loaded {
+	assert "[[ $# -eq 1 ]]"
+	(( ${+loaded_tools[(r)*${1}]} ))
 }
 
 function require {
-	[[ $# == 0 ]] && exit 255
+	assert "[[ $# -ne 0 ]]"
 
-	typeset -a box_modules
-
-	local module
-	for module in "$@"; do
-		module_is_loaded "$module" && continue
-		path_search "$module" || return 1
-		box_modules+=( "$retval/$module" )
-	done
-	
-	for module in "${box_modules[@]}"; do
-		module_init "$module"
+	local tool
+	for tool in "$@"; do
+		[[ -z "$tool" ]] && continue
+		tool_is_loaded "$tool" && continue
+		path_search "$tool" || return 1
+		
+		tool_init "$tool" "$retval"
 	done
 }
 
-function unload_module {
-	[[ -f "$*/free" ]] && source "$*/free"
+function free_tools {
+	assert "[[ $# -ne 0 ]]"
+	
+	local tool
+	for tool in "$@"; do
+		generate_free_function_name "$tool"
+		$retval
+	done
 }
 
 require usage
@@ -100,9 +113,7 @@ if ! require "$1"; then
 fi
 "$@"
 
-for module in "${loaded_modules[@]}"; do
-	unload_module "$module"
-done
-unset loaded_modules module
+free_tools "${(aO)loaded_tools[@]}"
+unset loaded_tools
 
 # vim:ts=4 sts=4

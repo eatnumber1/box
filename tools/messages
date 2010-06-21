@@ -1,4 +1,12 @@
-require colors assert
+function messages_init {
+	require colors assert
+}
+
+function messages_free {
+	unset -f error
+	unset -f warning
+	unset -f info
+}
 
 function error {
 	assert "[[ $# -ne 0 ]]"
