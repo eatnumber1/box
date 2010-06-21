@@ -1,5 +1,5 @@
 function assert_constructor {
-	grab messages
+	grab zsh/parameter messages
 }
 
 function assert_destructor {

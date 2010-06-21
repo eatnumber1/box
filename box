@@ -3,9 +3,6 @@ emulate -L zsh
 setopt err_exit
 #setopt xtrace
 
-# TODO: Treat zshmodules as tools
-zmodload zsh/parameter
-
 # TODO: Add zparseopts support
 
 typeset -r PROGNAME="${0##*/}"
@@ -20,7 +17,7 @@ fi
 # Boostrap functions: These will be replaced once we are fully initialized.
 function assert {
 	if ! eval "$*"; then
-		echo "Assertion failed at $functrace[1]" >&2
+		echo "Assertion failed while grabbing assert" >&2
 		exit 255
 	fi
 }
@@ -56,6 +53,16 @@ function box_path_search {
 	return 1
 }
 
+function box_is_defined {
+	assert "[[ $# -eq 1 ]]"
+	(( ${+functions[$1]} ))
+}
+
+function box_run_if_defined {
+	assert "[[ $# -eq 1 ]]"
+	box_is_defined "$1" && "$1"
+}
+
 function box_tool_constructor {
 	assert "[[ $# -eq 2 ]]"
 	local modname="$1" moddir="$2"
@@ -63,24 +70,38 @@ function box_tool_constructor {
 	assert "[[ -f $modfile ]]"
 
 	source "$modfile"
+	loaded_tools+=( "$modname" )
+	box_run_if_defined "${modname}_constructor"
 	local fname="_box_${modname}_destructor"
 	local cleanup="function $fname {; "
-	(( ${+functions[${modname}_constructor]} )) && cleanup+="unset -f ${modname}_constructor; "
-	if (( ${+functions[${modname}_destructor]} )); then
+	box_is_defined "${modname}_constructor" && cleanup+="unset -f ${modname}_constructor; "
+	if box_is_defined "${modname}_destructor"; then
 		cleanup+="${modname}_destructor; "
 		cleanup+="unset -f ${modname}_destructor; "
 	fi
 	cleanup+="unset -f $fname; }"
 	eval "$cleanup"
-	loaded_tools+=( "$modname" )
 	box_tool_destructors+=( "$fname" )
-	(( ${+functions[${modname}_constructor]} )) && ${modname}_constructor
 	return 0
 }
 
 function box_tool_loaded {
 	assert "[[ $# -eq 1 ]]"
 	(( ${+loaded_tools[(r)*${1}]} ))
+}
+
+function box_zmodload {
+	assert "[[ $# -eq 1 ]]"
+
+	local modname="$1"
+	zmodload "$modname" 2>/dev/null || return 1
+	local fname="_box_${modname}_destructor"
+	eval "function $fname {
+		zmodload -u $modname
+		unset -f $fname
+	}"
+	box_tool_destructors+=( "$fname" )
+	loaded_tools+="$modname"
 }
 
 function grab {
@@ -90,14 +111,17 @@ function grab {
 	for tool in "$@"; do
 		[[ -z "$tool" ]] && continue
 		box_tool_loaded "$tool" && continue
-		box_path_search "$tool" || return 1
-		
-		box_tool_constructor "$tool" "$retval"
+		if ! box_path_search "$tool"; then
+			box_zmodload "$tool" || return 1
+		else
+			box_tool_constructor "$tool" "$retval"
+		fi
 	done
 }
 
 function box_tool_destructor {
-	assert "[[ $# -eq 1 ]]"
+	# Can't call assert here because this is called late enough that assert
+	# might have been undefined already
 	
 	$box_tool_destructors[$1]
 	box_tool_destructors[$1]=()
@@ -118,4 +142,4 @@ typeset -i i
 for (( i = $#box_tool_destructors; i > 0; i-- )); do
 	box_tool_destructor $i
 done
-unset loaded_tools i
+unset loaded_tools box_tool_destructors i
