@@ -78,7 +78,7 @@ function box_tool_constructor {
 	return 0
 }
 
-function tool_is_loaded {
+function box_tool_loaded {
 	assert "[[ $# -eq 1 ]]"
 	(( ${+loaded_tools[(r)*${1}]} ))
 }
@@ -89,7 +89,7 @@ function grab {
 	local tool
 	for tool in "$@"; do
 		[[ -z "$tool" ]] && continue
-		tool_is_loaded "$tool" && continue
+		box_tool_loaded "$tool" && continue
 		box_path_search "$tool" || return 1
 		
 		box_tool_constructor "$tool" "$retval"
