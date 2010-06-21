@@ -14,3 +14,5 @@ function info {
 	assert "[[ $# -ne 0 ]]"
 	echo "${fg_bold[green]}*${reset_color} $*" >&2
 }
+
+# vim:ft=zsh
