@@ -5,10 +5,10 @@ setopt err_exit
 
 # TODO: Add zparseopts support
 
-typeset -r PROGNAME="${0##*/}"
+typeset PROGNAME="${0##*/}"
 
 typeset -a box_path
-typeset -r box_userdir="$HOME/.box"
+typeset box_userdir="$HOME/.box"
 if [[ -d "$box_userdir" ]]; then
 	[[ -f "$box_userdir/config" ]] && source "$box_userdir/config"
 	[[ -d "$box_userdir/tools" ]] && box_path+=( "$box_userdir/tools" )
@@ -23,7 +23,7 @@ function assert {
 }
 # End bootstrap functions
 
-typeset -ga loaded_tools
+typeset -ga box_loaded_tools
 typeset -ga box_tool_destructors
 
 function box_path_search_one {
@@ -70,7 +70,7 @@ function box_tool_constructor {
 	assert "[[ -f $modfile ]]"
 
 	source "$modfile"
-	loaded_tools+=( "$modname" )
+	box_loaded_tools+=( "$modname" )
 	box_run_if_defined "${modname}_constructor"
 	local fname="_box_${modname}_destructor"
 	local cleanup="function $fname {; "
@@ -87,7 +87,7 @@ function box_tool_constructor {
 
 function box_tool_loaded {
 	assert "[[ $# -eq 1 ]]"
-	(( ${+loaded_tools[(r)*${1}]} ))
+	(( ${+box_loaded_tools[(r)*${1}]} ))
 }
 
 function box_zmodload {
@@ -101,7 +101,7 @@ function box_zmodload {
 		unset -f $fname
 	}"
 	box_tool_destructors+=( "$fname" )
-	loaded_tools+="$modname"
+	box_loaded_tools+="$modname"
 }
 
 function grab {
@@ -125,7 +125,7 @@ function box_tool_destructor {
 	
 	$box_tool_destructors[$1]
 	box_tool_destructors[$1]=()
-	loaded_tools[$1]=()
+	box_loaded_tools[$1]=()
 }
 
 # Always grab assert first because box_tool_destructor uses it
@@ -147,4 +147,5 @@ typeset -i i
 for (( i = $#box_tool_destructors; i > 0; i-- )); do
 	box_tool_destructor $i
 done
-unset loaded_tools box_tool_destructors i
+unset box_loaded_tools box_tool_destructors i
+unset PROGNAME box_path box_userdir retval
