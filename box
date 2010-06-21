@@ -131,12 +131,17 @@ function box_tool_destructor {
 # Always grab assert first because box_tool_destructor uses it
 grab assert
 
-grab usage
-if ! grab "$1"; then
-	usage
-	exit 1
+if [[ $PROGNAME == "box" ]]; then
+	grab usage
+	if ! grab "$1"; then
+		usage
+		exit 1
+	fi
+	"$@"
+else
+	grab $0(:t)
+	$0(:t) "$@"
 fi
-"$@"
 
 typeset -i i
 for (( i = $#box_tool_destructors; i > 0; i-- )); do
