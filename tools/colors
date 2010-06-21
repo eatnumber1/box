@@ -1,4 +1,4 @@
-function colors_init {
+function colors_constructor {
 	autoload -U colors
 	colors
 }

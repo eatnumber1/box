@@ -1,8 +1,8 @@
-function messages_init {
-	require colors assert
+function messages_constructor {
+	grab colors assert
 }
 
-function messages_free {
+function messages_destructor {
 	unset -f error
 	unset -f warning
 	unset -f info

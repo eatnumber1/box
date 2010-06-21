@@ -1,8 +1,8 @@
-function assert_init {
-	require messages
+function assert_constructor {
+	grab messages
 }
 
-function assert_free {
+function assert_destructor {
 	unset -f assert
 }
 

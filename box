@@ -27,8 +27,9 @@ function assert {
 # End bootstrap functions
 
 typeset -ga loaded_tools
+typeset -ga box_tool_destructors
 
-function path_search_one {
+function box_path_search_one {
 	assert "[[ $# == 2 ]]"
 
 	local i
@@ -41,13 +42,13 @@ function path_search_one {
 	return 1
 }
 
-function path_search {
+function box_path_search {
 	assert "[[ $# == 1 ]]"
 	assert "(( $+box_path ))"
 	
 	local path_elem
-	for path_elem in "${box_path[@]}"; do
-		path_search_one "$1" "$path_elem" || continue
+	for path_elem in "$box_path[@]"; do
+		box_path_search_one "$1" "$path_elem" || continue
 
 		retval=( "$path_elem" )
 		return 0
@@ -55,29 +56,25 @@ function path_search {
 	return 1
 }
 
-function generate_free_function_name {
-	# Can't call tools here because this is called during free
-	retval=( "box_internal_${1}_free" )
-}
-
-function tool_init {
+function box_tool_constructor {
 	assert "[[ $# -eq 2 ]]"
 	local modname="$1" moddir="$2"
 	local modfile="$moddir/$modname"
 	assert "[[ -f $modfile ]]"
 
 	source "$modfile"
-	generate_free_function_name "$modname"
-	local cleanup="function $retval {; "
-	(( ${+functions[${modname}_init]} )) && cleanup+="unset -f ${modname}_init; "
-	if (( ${+functions[${modname}_free]} )); then
-		cleanup+="${modname}_free; "
-		cleanup+="unset -f ${modname}_free; "
+	local fname="_box_${modname}_destructor"
+	local cleanup="function $fname {; "
+	(( ${+functions[${modname}_constructor]} )) && cleanup+="unset -f ${modname}_constructor; "
+	if (( ${+functions[${modname}_destructor]} )); then
+		cleanup+="${modname}_destructor; "
+		cleanup+="unset -f ${modname}_destructor; "
 	fi
-	cleanup+="unset -f $retval; }"
+	cleanup+="unset -f $fname; }"
 	eval "$cleanup"
 	loaded_tools+=( "$modname" )
-	(( ${+functions[${modname}_init]} )) && ${modname}_init
+	box_tool_destructors+=( "$fname" )
+	(( ${+functions[${modname}_constructor]} )) && ${modname}_constructor
 	return 0
 }
 
@@ -86,37 +83,41 @@ function tool_is_loaded {
 	(( ${+loaded_tools[(r)*${1}]} ))
 }
 
-function require {
+function grab {
 	assert "[[ $# -ne 0 ]]"
 
 	local tool
 	for tool in "$@"; do
 		[[ -z "$tool" ]] && continue
 		tool_is_loaded "$tool" && continue
-		path_search "$tool" || return 1
+		box_path_search "$tool" || return 1
 		
-		tool_init "$tool" "$retval"
+		box_tool_constructor "$tool" "$retval"
 	done
 }
 
-function free_tools {
-	assert "[[ $# -ne 0 ]]"
+function box_tool_destructor {
+	assert "[[ $# -eq 1 ]]"
 	
-	local tool
-	for tool in "$@"; do
-		generate_free_function_name "$tool"
-		$retval
-	done
+	$box_tool_destructors[$1]
+	box_tool_destructors[$1]=()
+	loaded_tools[$1]=()
 }
 
-require usage
-if ! require "$1"; then
+# Always grab assert first because box_tool_destructor uses it
+grab assert
+
+grab usage
+if ! grab "$1"; then
 	usage
 	exit 1
 fi
 "$@"
 
-free_tools "${(aO)loaded_tools[@]}"
-unset loaded_tools
+typeset -i i
+for (( i = $#box_tool_destructors; i > 0; i-- )); do
+	box_tool_destructor $i
+done
+unset loaded_tools i
 
 # vim:ts=4 sts=4

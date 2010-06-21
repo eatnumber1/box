@@ -1,4 +1,4 @@
-function usage_free {
+function usage_destructor {
 	unset -f usage
 }
 

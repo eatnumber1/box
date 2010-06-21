@@ -1,8 +1,8 @@
-function help_init {
-	require messages
+function help_constructor {
+	grab messages
 }
 
-function help_free {
+function help_destructor {
 	unset -f help
 }
 
