@@ -134,8 +134,12 @@ function box_exit {
 	for (( i = $#box_tool_destructors; i > 0; i-- )); do
 		box_tool_destructor $i
 	done
+	unset -f box_tool_destructor box_zmodload grab box_is_defined
+	unset -f box_tool_constructor box_run_if_defined box_path_search
+	unset -f box_path_search_one
 	unset box_loaded_tools box_tool_destructors
 	unset PROGNAME box_path box_userdir retval
+	unset -f box_exit
 }
 
 trap 'box_exit' EXIT
