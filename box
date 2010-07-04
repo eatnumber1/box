@@ -145,7 +145,7 @@ function box_exit {
 trap 'box_exit' EXIT
 
 grab colors
-trap 'echo "${fg_bold[red]}*${reset_color} Command returned nonzero exit code" >&2; box_exit; exit 127' ZERR
+trap 'echo "${fg_bold[red]}*${reset_color} Command returned nonzero exit code" >&2' ZERR
 grab assert
 
 if [[ $PROGNAME == "box" ]]; then
