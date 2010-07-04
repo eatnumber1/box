@@ -40,12 +40,12 @@ function box_path_search_one {
 	return 1
 }
 
-function box_path_search {
+function path_search {
 	assert "[[ $# == 1 ]]"
-	assert "(( $+box_path ))"
+	assert "(( $+path_search_arg ))"
 	
 	local path_elem
-	for path_elem in "$box_path[@]"; do
+	for path_elem in "$path_search_arg[@]"; do
 		box_path_search_one "$1" "$path_elem" || continue
 
 		retval=( "$path_elem" )
@@ -108,11 +108,12 @@ function box_zmodload {
 function grab {
 	assert "[[ $# -ne 0 ]]"
 
-	local tool
+	local tool path_search_arg
 	for tool in "$@"; do
 		[[ -z "$tool" ]] && continue
 		box_tool_loaded "$tool" && continue
-		if ! box_path_search "$tool"; then
+		path_search_arg=( "$box_path[@]" )
+		if ! path_search "$tool"; then
 			box_zmodload "$tool" || return 1
 		else
 			box_tool_constructor "$tool" "$retval" || return 1
@@ -135,7 +136,7 @@ function box_exit {
 		box_tool_destructor $i
 	done
 	unset -f box_tool_destructor box_zmodload grab box_is_defined
-	unset -f box_tool_constructor box_run_if_defined box_path_search
+	unset -f box_tool_constructor box_run_if_defined path_search
 	unset -f box_path_search_one
 	unset box_loaded_tools box_tool_destructors
 	unset PROGNAME box_path box_userdir retval

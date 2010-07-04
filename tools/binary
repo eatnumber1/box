@@ -1,0 +1,25 @@
+function binary_constructor {
+	grab assert messages
+}
+
+function binary_destructor {
+	unset -f binary
+}
+
+function binary {
+	assert "[[ $# -ge 1 ]]"
+	local i
+	for i in "$@"; do
+		whence -p "$i" | read -r retval
+		if [[ $? -ne 0 ]]; then
+			error "Binary $i not found in PATH"
+			exit 1
+		fi
+		if [[ ! -x "$retval" ]]; then
+			error "Binary $retval is not executable"
+			exit 1
+		fi
+	done
+}
+
+# vim:ft=zsh
