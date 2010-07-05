@@ -4,8 +4,6 @@ emulate -L zsh
 
 trap 'echo "Command returned nonzero exit code" >&2' ZERR
 
-# TODO: Add zparseopts support
-
 typeset PROGNAME="${0##*/}"
 
 typeset -a box_path
