@@ -27,31 +27,13 @@ function assert {
 typeset -ga box_loaded_tools
 typeset -ga box_tool_destructors
 
-function box_path_search_one {
-	assert "[[ $# == 2 ]]"
-
-	local i
-	for i in $2/*; do
-		if [[ ${i##*/} == $1 ]]; then
-			retval=( "$i" )
-			return 0
-		fi
-	done
-	return 1
-}
-
 function path_search {
 	assert "[[ $# == 1 ]]"
 	assert "(( $+path_search_arg ))"
 	
-	local path_elem
-	for path_elem in "$path_search_arg[@]"; do
-		box_path_search_one "$1" "$path_elem" || continue
-
-		retval=( "$path_elem" )
-		return 0
-	done
-	return 1
+	typeset -a path
+	path=( "$path_search_arg[@]" )
+	retval=( ${(f)"$(whence -p "$1")"} )
 }
 
 function box_is_defined {
@@ -65,20 +47,19 @@ function box_run_if_defined {
 }
 
 function box_tool_constructor {
-	assert "[[ $# -eq 2 ]]"
-	local modname="$1" moddir="$2"
-	local modfile="$moddir/$modname"
-	assert "[[ -f $modfile ]]"
+	assert "[[ $# -eq 1 ]]"
+	local toolname="${1##*/}" toolfile="$1"
+	assert "[[ -f $toolfile ]]"
 
-	source "$modfile"
-	box_loaded_tools+=( "$modname" )
-	box_run_if_defined "${modname}_constructor"
-	local fname="_box_${modname}_destructor"
+	source "$toolfile"
+	box_loaded_tools+=( "$toolname" )
+	box_run_if_defined "${toolname}_constructor"
+	local fname="_box_${toolname}_destructor"
 	local cleanup="function $fname {; "
-	box_is_defined "${modname}_constructor" && cleanup+="unset -f ${modname}_constructor; "
-	if box_is_defined "${modname}_destructor"; then
-		cleanup+="${modname}_destructor; "
-		cleanup+="unset -f ${modname}_destructor; "
+	box_is_defined "${toolname}_constructor" && cleanup+="unset -f ${toolname}_constructor; "
+	if box_is_defined "${toolname}_destructor"; then
+		cleanup+="${toolname}_destructor; "
+		cleanup+="unset -f ${toolname}_destructor; "
 	fi
 	cleanup+="unset -f $fname; }"
 	eval "$cleanup"
@@ -116,7 +97,7 @@ function grab {
 		if ! path_search "$tool"; then
 			box_zmodload "$tool" || return 1
 		else
-			box_tool_constructor "$tool" "$retval" || return 1
+			box_tool_constructor "$retval" || return 1
 		fi
 	done
 }
@@ -137,7 +118,6 @@ function box_exit {
 	done
 	unset -f box_tool_destructor box_zmodload grab box_is_defined
 	unset -f box_tool_constructor box_run_if_defined path_search
-	unset -f box_path_search_one
 	unset box_loaded_tools box_tool_destructors
 	unset PROGNAME box_path box_userdir retval
 	unset -f box_exit
