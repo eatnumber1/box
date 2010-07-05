@@ -1,9 +1,15 @@
+function usage_constructor {
+	grab help
+}
+
 function usage_destructor {
 	unset -f usage
 }
 
 function usage {
-	echo "Usage: $PROGNAME tool [arguments]..."
+	echo "Usage: $PROGNAME [global options] tool [module options]"
+	echo
+	help
 }
 
 # vim:ft=zsh

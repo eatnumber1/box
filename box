@@ -61,6 +61,12 @@ function box_tool_constructor {
 		cleanup+="${toolname}_destructor; "
 		cleanup+="unset -f ${toolname}_destructor; "
 	fi
+	if ! box_is_defined "${toolname}_help"; then
+		eval "function ${toolname}_help {
+			retval=()
+		}"
+	fi
+	cleanup+="unset -f ${toolname}_help; "
 	cleanup+="unset -f $fname; }"
 	eval "$cleanup"
 	box_tool_destructors+=( "$fname" )
@@ -91,7 +97,7 @@ function grab {
 
 	local tool path_search_arg
 	for tool in "$@"; do
-		[[ -z "$tool" ]] && continue
+		[[ -z "$tool" ]] && return 1
 		box_tool_loaded "$tool" && continue
 		path_search_arg=( "$box_path[@]" )
 		if ! path_search "$tool"; then
@@ -118,7 +124,7 @@ function box_exit {
 	done
 	unset -f box_tool_destructor box_zmodload grab box_is_defined
 	unset -f box_tool_constructor box_run_if_defined path_search
-	unset box_loaded_tools box_tool_destructors
+	unset box_loaded_tools box_tool_destructors help
 	unset PROGNAME box_path box_userdir retval
 	unset -f box_exit
 }
@@ -129,9 +135,12 @@ grab colors
 trap 'echo "${fg_bold[red]}*${reset_color} Command returned nonzero exit code" >&2' ZERR
 grab assert
 
+zparseopts -E -K -D h=help -help=help
+
 if [[ $PROGNAME == "box" ]]; then
-	grab usage
+	(( $+help )) && 1="usage"
 	if ! grab "$1"; then
+		grab usage
 		usage
 		exit 1
 	fi
@@ -140,5 +149,3 @@ else
 	grab $0(:t)
 	$0(:t) "$@"
 fi
-
-trap '' ZERR

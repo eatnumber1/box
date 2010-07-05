@@ -3,16 +3,41 @@ function help_constructor {
 }
 
 function help_destructor {
-	unset -f help
+	unset -f help _help_all_in_path
+}
+
+function help_help {
+	retval=( "Display this help text" )
+}
+
+function _help_all_in_path {
+	assert "[[ $# -eq 0 ]]"
+	typeset -a path
+	path=( "$box_path[@]" )
+	hash -rf
+	retval=( "${(f)"$(hash)"}" )
+	hash -r
 }
 
 function help {
-	info "The available modules are:"
-	local i d
-	for i in "${box_path[@]}"; do
-		for d in "$i"/*; do
-			info "\t${d##*/}"
-		done
+	typeset -i printf_help_offset=20
+	echo "${fg_bold[green]}Global options:${reset_color}"
+	help_help
+	printf "  %s, %-$(( $printf_help_offset - 4 ))s %s\n" "-h" "--help" "$retval"
+	echo
+	echo "${fg_bold[green]}Available modules:${reset_color}"
+	
+	local i REPLY
+	_help_all_in_path
+	for i in "$retval[@]"; do
+		set -- "${(s(=))i}"
+		[[ ! -x "$2" ]] && continue
+		grab "$1"
+		"${1}_help"
+		while read -r; do
+			printf "  %-${printf_help_offset}s %s\n" "$1" "$REPLY"
+			1=""
+		done <<< "$retval"
 	done
 }
 

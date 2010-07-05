@@ -6,11 +6,15 @@ function binary_destructor {
 	unset -f binary
 }
 
+function binary_help {
+	retval=( "Require some binary in the PATH" )
+}
+
 function binary {
 	assert "[[ $# -ge 1 ]]"
 	local i
 	for i in "$@"; do
-		whence -p "$i" | read -r retval
+		retval=( "$(whence -p "$i")" )
 		if [[ $? -ne 0 ]]; then
 			error "Binary $i not found in PATH"
 			exit 1
