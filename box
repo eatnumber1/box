@@ -18,7 +18,7 @@ fi
 # Boostrap functions: These will be replaced once we are fully initialized.
 function assert {
 	if ! eval "$*"; then
-		echo "Assertion failed while grabbing assert" >&2
+		echo "Assertion failed during bootstrap" >&2
 		exit 255
 	fi
 }
