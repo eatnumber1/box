@@ -115,7 +115,8 @@ function box_tool_destructor {
 	box_loaded_tools[$1]=()
 }
 
-function box_exit {
+function exit {
+	assert "[[ $# -eq 1 ]]"
 	typeset -i i
 	for (( i = $#box_tool_destructors; i > 0; i-- )); do
 		box_tool_destructor $i
@@ -124,10 +125,11 @@ function box_exit {
 	unset -f box_tool_constructor box_run_if_defined path_search
 	unset box_loaded_tools box_tool_destructors help
 	unset PROGNAME box_path box_userdir retval
-	unset -f box_exit
+	unset -f exit
+	builtin exit $1
 }
 
-trap 'box_exit' EXIT
+trap 'exit $?' EXIT
 
 grab colors
 trap 'echo "${fg_bold[red]}*${reset_color} Command returned nonzero exit code" >&2' ZERR
