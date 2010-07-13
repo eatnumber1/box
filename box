@@ -102,6 +102,7 @@ function path_search {
 
 function grab {
 	assert "[[ $# -ne 0 ]]"
+	assert "[[ -n \"$*\" ]]"
 
 	local tool path_search_arg
 	for tool in "$@"; do
@@ -117,7 +118,7 @@ function grab {
 }
 
 function exit {
-	assert "[[ $# -eq 1 ]]"
+	assert "[[ $# -le 1 ]]"
 	typeset -i i
 	for (( i = $#box_tool_destructors; i > 0; i-- )); do
 		_box_tool_destructor $i
@@ -128,7 +129,7 @@ function exit {
 	unset box_loaded_tools box_tool_destructors help
 	unset PROGNAME box_path box_userdir retval
 	unset -f exit
-	builtin exit $1
+	builtin exit ${1:-0}
 }
 # End Global Functions
 
@@ -141,10 +142,18 @@ grab assert
 zparseopts -E -K -D h=help -help=help
 
 if [[ $PROGNAME == "box" ]]; then
-	(( $+help )) && 1="usage"
-	if ! grab "$1"; then
-		grab usage
+	[[ "$1" == "help" ]] && typeset help
+	if (( $+help )); then
+		grab help
 		usage
+		echo
+		help
+		exit
+	fi
+
+	if [[ -z "$1" ]] || ! grab "$1"; then
+		grab help
+		usage >&2
 		exit 1
 	fi
 	"$@"

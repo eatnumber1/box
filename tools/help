@@ -3,7 +3,7 @@ function help_constructor {
 }
 
 function help_destructor {
-	unset -f help _help_all_in_path
+	unset -f help _help_all_in_path usage
 }
 
 function help_help {
@@ -39,6 +39,10 @@ function help {
 			1=""
 		done <<< "$retval"
 	done
+}
+
+function usage {
+	echo "Usage: $PROGNAME [global options] <tool> [module options]"
 }
 
 # vim:ft=zsh
