@@ -84,7 +84,7 @@ function _box_zmodload {
 function _box_tool_destructor {
 	# Can't call assert here because this is called late enough that assert
 	# might have been undefined already
-	
+
 	$box_tool_destructors[$1]
 	box_tool_destructors[$1]=()
 	box_loaded_tools[$1]=()
@@ -94,7 +94,7 @@ function _box_tool_destructor {
 function path_search {
 	assert "[[ $# == 1 ]]"
 	assert "(( $+path_search_arg ))"
-	
+
 	typeset -a path
 	path=( "$path_search_arg[@]" )
 	retval=( ${(f)"$(whence -p "$1")"} )

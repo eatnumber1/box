@@ -26,7 +26,7 @@ function help {
 	printf "  %s, %-$(( $printf_help_offset - 4 ))s %s\n" "-h" "--help" "$retval"
 	echo
 	echo "${fg_bold[green]}Available tools:${reset_color}"
-	
+
 	local i REPLY
 	_help_all_in_path
 	for i in "$retval[@]"; do
