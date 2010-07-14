@@ -1,5 +1,5 @@
 function help_constructor {
-	grab messages
+	grab messages zsh/parameter
 }
 
 function help_destructor {
@@ -15,7 +15,7 @@ function _help_all_in_path {
 	typeset -a path
 	path=( "$box_path[@]" )
 	hash -rf
-	retval=( "${(f)"$(hash)"}" )
+	retval_kv=( "${(kv)commands[@]}" )
 	hash -r
 }
 
@@ -27,16 +27,15 @@ function help {
 	echo
 	echo "${fg_bold[green]}Available tools:${reset_color}"
 
-	local i REPLY
+	local key REPLY
 	_help_all_in_path
-	for i in "$retval[@]"; do
-		set -- "${(s(=))i}"
-		[[ ! -x "$2" ]] && continue
-		grab "$1"
-		"${1}_help"
+	for key in "${(k)retval_kv[@]}"; do
+		[[ ! -x "${retval_kv[$key]}" ]] && continue
+		grab "$key"
+		"${key}_help"
 		while read -r; do
-			printf "  %-${printf_help_offset}s %s\n" "$1" "$REPLY"
-			1=""
+			printf "  %-${printf_help_offset}s %s\n" "$key" "$REPLY"
+			key=""
 		done <<< "$retval"
 	done
 }
