@@ -1,6 +1,7 @@
 #!/bin/zsh
 emulate -L zsh
 #setopt xtrace
+typeset -A retval_kv
 
 trap 'echo "Command returned nonzero exit code" >&2' ZERR
 
