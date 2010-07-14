@@ -1,23 +1,29 @@
-function assert_constructor {
-	grab zsh/parameter messages
-}
-
-function assert_destructor {
-	unset -f assert
-}
-
 function assert_help {
 	retval=( "Assert some condition" )
 }
 
-function assert {
-	[[ $# -ge 1 ]] || exit 255
+if (( $+ENABLE_ASSERT )); then
+	function assert_constructor {
+		grab zsh/parameter messages
+	}
 
-	if ! eval "$1"; then
-		shift
-		error "Assertion failed at $functrace[1]"
-		exit 255
-	fi
-}
+	function assert_destructor {
+		unset -f assert
+	}
+	
+	function assert {
+		[[ $# -ge 1 ]] || exit 255
+
+		if ! eval "$1"; then
+			shift
+			error "Assertion failed at $functrace[1]"
+			exit 255
+		fi
+	}
+else
+	function assert {
+		return 0
+	}
+fi
 
 # vim:ft=zsh
