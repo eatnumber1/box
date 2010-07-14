@@ -1,6 +1,6 @@
 #!/bin/zsh
 emulate -L zsh
-setopt xtrace
+#setopt xtrace
 typeset -A retval_kv
 typeset -i retval_i
 
@@ -120,6 +120,7 @@ function grab {
 }
 
 function exit {
+	unsetopt xtrace
 	assert "[[ $# -le 1 ]]"
 	typeset -i i
 	for (( i = $#box_tool_destructors; i > 0; i-- )); do
@@ -141,6 +142,7 @@ grab colors
 trap 'echo "${fg_bold[red]}*${reset_color} Command returned nonzero exit code" >&2' ZERR
 grab assert
 
+grab zsh/zutil
 zparseopts -E -K -D h=help -help=help
 
 if [[ $PROGNAME == "box" ]]; then
