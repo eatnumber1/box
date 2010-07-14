@@ -11,7 +11,7 @@ function mounted {
 	assert "[[ $# -eq 2 ]]"
 	local mountpoint="$1" fstype="$2" REPLY
 	mount -t "$fstype" | while read -r; do
-		set -- ${=REPLY}
+		set -- "${=REPLY}"
 		[[ $3 == $mountpoint ]] && return 0
 	done
 	return 1
