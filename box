@@ -143,10 +143,10 @@ grab messages
 trap 'error "Command returned nonzero exit code"' ZERR
 grab assert
 
-grab zsh/zutil
-zparseopts -E -K -D h=help -help=help
-
 if [[ $PROGNAME == "box" ]]; then
+	grab zsh/zutil
+	zparseopts -E -K -D h=help -help=help
+
 	[[ "$1" == "help" ]] && typeset help
 	if (( $+help )); then
 		grab help
