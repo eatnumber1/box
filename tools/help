@@ -1,5 +1,5 @@
 function help_constructor {
-	grab messages zsh/parameter
+	grab messages zsh/parameter strings
 }
 
 function help_destructor {
@@ -33,6 +33,7 @@ function help {
 		[[ ! -x "${retval_kv[$key]}" ]] && continue
 		grab "$key"
 		"${key}_help"
+		fold <<< "$retval"
 		while read -r; do
 			printf "  %-${printf_help_offset}s %s\n" "$key" "$REPLY"
 			key=""

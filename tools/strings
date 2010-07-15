@@ -1,0 +1,43 @@
+function strings_constructor {
+	grab binary zsh/zutil assert
+	binary fold
+	(( $+COLUMNS )) || grab zsh/terminfo
+}
+
+function strings_destructor {
+	unset -f fold _strings_get_columns merge_short_arg
+}
+
+function _strings_get_columns {
+	if ! (( $+COLUMNS )); then
+		retval_i=$(echoti cols 2>/dev/null || :)
+		[[ $retval_i -eq 0 ]] && retval_i=79
+	else
+		retval_i=$COLUMNS
+	fi
+}
+
+function merge_short_arg {
+	assert "[[ $# -eq 3 ]]"
+	assert "(( \$+$1 ))"
+	eval "(( \$+${1}[$2] ))" && eval "args[$3]=\"\$$1[$2]\""
+}
+
+function fold {
+	typeset -i cols
+	_strings_get_columns
+	cols="$retval_i"
+	typeset -A args
+	zparseopts -K -D -A args m: -margin: b -bytes c -columns w: -width:
+	typeset -a foldargs
+	merge_short_arg args -w --width
+	merge_short_arg args -m --margin
+	merge_short_arg args -b --bytes
+	merge_short_arg args -c --columns
+
+	foldargs+=( "--width=${args[--width]:-$cols}" )
+	(( $+args[--columns] )) || foldargs+=( "--spaces" )
+	(( $+args[--bytes] )) && foldargs+=( "--bytes" )
+	retval="$(command fold "$foldargs[@]" "$@")"
+}
+# vim:ft=zsh
