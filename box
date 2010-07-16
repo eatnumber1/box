@@ -1,6 +1,7 @@
 #!/bin/zsh
 emulate -L zsh
 #setopt xtrace
+setopt err_exit
 
 trap 'echo "Command returned nonzero exit code" >&2' ZERR
 
@@ -8,6 +9,7 @@ typeset -A retval_kv
 typeset -i retval_i
 typeset retval
 
+# TODO: Add a facility for unloading these.
 zmodload -F zsh/parameter +p:commands
 
 typeset PROGNAME="${0##*/}"
@@ -57,9 +59,9 @@ function _box_tool_constructor {
 		cleanup+="unset -f ${toolname}_destructor; "
 	fi
 	if ! _box_is_defined "${toolname}_help"; then
-		eval "function ${toolname}_help {
+		function ${toolname}_help {
 			retval=()
-		}"
+		}
 	fi
 	cleanup+="unset -f ${toolname}_help; "
 	cleanup+="unset -f $fname; }"
@@ -113,7 +115,6 @@ function path_search {
 	else
 		ret=1
 	fi
-	hash -r
 	commands=( ${(kv)saved_commands} )
 	return $ret
 }
@@ -137,6 +138,7 @@ function grab {
 
 function exit {
 	unsetopt xtrace
+	trap 'echo "Double fault" >&2; builtin exit 1' ZERR
 	assert "[[ $# -le 1 ]]"
 	typeset -i i
 	for (( i = $#box_tool_destructors; i > 0; i-- )); do
