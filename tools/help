@@ -11,11 +11,11 @@ function help_help {
 }
 
 function _help_all_in_path {
-	assert "[[ $# -eq 0 ]]"
+	assert "[[ $# -eq 1 ]]"
 	typeset -a path
 	typeset -A saved_commands
 	saved_commands=( ${(kv)commands} )
-	path=( $box_path[@] )
+	eval "path=( \$${1}[@] )"
 	hash -rf
 	retval_kv=( ${(kv)commands[@]} )
 	hash -r
@@ -31,7 +31,7 @@ function help {
 	echo "${fg_bold[green]}Available tools:${reset_color}"
 
 	local key REPLY
-	_help_all_in_path
+	_help_all_in_path box_path
 	for key in ${(k)retval_kv[@]}; do
 		[[ ! -x ${retval_kv[$key]} ]] && continue
 		grab "$key"
