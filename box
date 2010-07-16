@@ -1,11 +1,14 @@
 #!/bin/zsh
 emulate -L zsh
 #setopt xtrace
+
+trap 'echo "Command returned nonzero exit code" >&2' ZERR
+
 typeset -A retval_kv
 typeset -i retval_i
 typeset retval
 
-trap 'echo "Command returned nonzero exit code" >&2' ZERR
+zmodload -F zsh/parameter +p:commands
 
 typeset PROGNAME="${0##*/}"
 
@@ -41,7 +44,7 @@ function _box_run_if_defined {
 function _box_tool_constructor {
 	assert "[[ $# -eq 1 ]]"
 	local toolname="${1##*/}" toolfile="$1"
-	assert "[[ -f $toolfile ]]"
+	assert "[[ -f \"$toolfile\" ]]"
 
 	source "$toolfile"
 	box_loaded_tools+=( "$toolname" )
@@ -65,7 +68,7 @@ function _box_tool_constructor {
 	return 0
 }
 
-function box_tool_loaded {
+function _box_tool_loaded {
 	assert "[[ $# -eq 1 ]]"
 	(( ${+box_loaded_tools[(r)*${1}]} ))
 }
@@ -99,8 +102,20 @@ function path_search {
 	assert "(( $+path_search_arg ))"
 
 	typeset -a path
+	typeset -A saved_commands
+	saved_commands=( ${(kv)commands} )
 	path=( "$path_search_arg[@]" )
-	retval=( ${(f)"$(whence -p "$1")"} )
+	hash -f
+	typeset -i ret
+	if (( $+commands[$1] )); then
+		retval=( $commands[$1] )
+		ret=0
+	else
+		ret=1
+	fi
+	hash -r
+	commands=( ${(kv)saved_commands} )
+	return $ret
 }
 
 function grab {
@@ -110,7 +125,7 @@ function grab {
 	local tool path_search_arg
 	for tool in "$@"; do
 		[[ -z "$tool" ]] && return 1
-		box_tool_loaded "$tool" && continue
+		_box_tool_loaded "$tool" && continue
 		path_search_arg=( "$box_path[@]" )
 		if ! path_search "$tool"; then
 			_box_zmodload "$tool" || return 1

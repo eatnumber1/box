@@ -12,9 +12,10 @@ function binary_help {
 
 function binary {
 	assert "[[ $# -ge 1 ]]"
+	hash -f
 	local i
 	for i in "$@"; do
-		retval=( "$(whence -p "$i")" )
+		retval=( $commands[$i] )
 		if [[ $? -ne 0 ]]; then
 			error "Binary $i not found in PATH"
 			exit 1
