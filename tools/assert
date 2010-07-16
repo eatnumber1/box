@@ -10,7 +10,7 @@ if (( $+ENABLE_ASSERT )); then
 	function assert_destructor {
 		unset -f assert
 	}
-	
+
 	function assert {
 		[[ $# -ge 1 ]] || exit 255
 
