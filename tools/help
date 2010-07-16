@@ -16,7 +16,7 @@ function _help_all_in_path {
 	typeset -A saved_commands
 	saved_commands=( ${(kv)commands} )
 	eval "path=( \$${1}[@] )"
-	hash -rf
+	hash -f
 	retval_kv=( ${(kv)commands[@]} )
 	hash -r
 	commands=( ${(kv)saved_commands} )
