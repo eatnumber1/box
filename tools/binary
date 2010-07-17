@@ -12,16 +12,18 @@ function binary_help {
 
 function binary {
 	assert "[[ $# -ge 1 ]]"
+	all_in_path path
+	typeset -A binaries
+	binaries=( ${(kv)retval_kv} )
 	local i
 	for i in "$@"; do
-		retval=( "$(whence -p "$i")" )
-		if [[ $? -ne 0 ]]; then
-			error "Binary $i not found in PATH"
-			exit 1
+		if (( ! $+binaries[$i] )); then
+			error "Binary $i not found in $path"
+			return 1
 		fi
-		if [[ ! -x "$retval" ]]; then
-			error "Binary $retval is not executable"
-			exit 1
+		if [[ ! -x "$binaries[$i]" ]]; then
+			error "Binary $binaries[$i] is not executable"
+			return 1
 		fi
 	done
 }
