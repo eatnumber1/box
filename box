@@ -1,7 +1,8 @@
-#!/bin/zsh
+#!/usr/bin/env zsh
 emulate -L zsh
 #setopt xtrace
 setopt err_exit
+zmodload zsh/zprof
 
 trap 'echo "Command returned nonzero exit code" >&2; exit 1' ZERR
 
@@ -152,6 +153,7 @@ function exit {
 	unset box_loaded_tools box_tool_destructors help
 	unset PROGNAME box_path box_userdir retval
 	unset -f exit
+	zprof
 	builtin exit ${1:-0}
 }
 # End Global Functions
