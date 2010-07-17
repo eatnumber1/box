@@ -138,7 +138,7 @@ function grab {
 
 function exit {
 	unsetopt xtrace
-	trap 'echo "Double fault" >&2; builtin exit 1' ZERR
+	trap 'echo "Error during exit" >&2; builtin exit 1' ZERR
 	assert "[[ $# -le 1 ]]"
 	typeset -i i
 	for (( i = $#box_tool_destructors; i > 0; i-- )); do
