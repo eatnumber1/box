@@ -4,7 +4,7 @@ function colors_constructor {
 }
 
 function colors_help {
-	retval=( "Set environment variables for controlling color. This is really long should be more than 80 chars lets see if it wraps." )
+	retval=( "Set environment variables for controlling color." )
 }
 
 function colors_destructor {

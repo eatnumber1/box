@@ -11,14 +11,17 @@ function help_help {
 }
 
 function help {
-	typeset -i printf_help_offset=20
+	typeset -i printf_help_offset=15
 	echo "${fg_bold[green]}Global options:${reset_color}"
 	help_help
 	printf "  %s, %-$(( $printf_help_offset - 4 ))s %s\n" "-h" "--help" "$retval"
 	echo
 	echo "${fg_bold[green]}Available tools:${reset_color}"
 
-	local key REPLY
+	get_columns
+	typeset -i cols=${retval_i}-${printf_help_offset}-3
+	[[ $cols -lt 1 ]] && cols=79
+	typeset key REPLY
 	all_in_path box_path
 	typeset -A box_path_elems
 	box_path_elems=( ${(kv)retval_kv} )
@@ -26,7 +29,7 @@ function help {
 		[[ ! -x $box_path_elems[$key] ]] && continue
 		grab "$key"
 		"${key}_help"
-		fold <<< "$retval"
+		fold --width $cols <<< "$retval"
 		while read -r; do
 			printf "  %-${printf_help_offset}s %s\n" "$key" "$REPLY"
 			key=""

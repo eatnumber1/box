@@ -5,10 +5,10 @@ function strings_constructor {
 }
 
 function strings_destructor {
-	unset -f fold _strings_get_columns merge_short_arg
+	unset -f fold get_columns merge_short_arg
 }
 
-function _strings_get_columns {
+function get_columns {
 	if ! (( $+COLUMNS )); then
 		retval_i=$(echoti cols 2>/dev/null || :)
 		[[ $retval_i -eq 0 ]] && retval_i=79
@@ -25,19 +25,25 @@ function merge_short_arg {
 
 function fold {
 	typeset -i cols
-	_strings_get_columns
-	cols="$retval_i"
 	typeset -A args
-	zparseopts -K -D -A args m: -margin: b -bytes c -columns w: -width:
-	typeset -a foldargs
+	zparseopts -K -D -A args m: -margin: b -bytes s -spaces w: -width:
 	merge_short_arg args -w --width
 	merge_short_arg args -m --margin
 	merge_short_arg args -b --bytes
-	merge_short_arg args -c --columns
+	merge_short_arg args -s --spaces
 
-	foldargs+=( "-w" "${args[--width]:-$cols}" )
-	(( $+args[--columns] )) || foldargs+=( "-s" )
+	if (( $+args[--width] )); then
+		cols=$args[--width]
+	else
+		get_columns
+		cols="$retval_i"
+	fi
+
+	typeset -a foldargs
+	foldargs+=( "-w" "$cols" )
+	(( $+args[--spaces] )) && foldargs+=( "-s" )
 	(( $+args[--bytes] )) && foldargs+=( "-b" )
 	retval="$(command fold "$foldargs[@]" "$@")"
 }
+
 # vim:ft=zsh
