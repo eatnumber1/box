@@ -3,22 +3,11 @@ function help_constructor {
 }
 
 function help_destructor {
-	unset -f help _help_all_in_path usage
+	unset -f help usage
 }
 
 function help_help {
 	retval=( "Display this help text" )
-}
-
-function _help_all_in_path {
-	assert "[[ $# -eq 1 ]]"
-	typeset -a path
-	typeset -A saved_commands
-	saved_commands=( ${(kv)commands} )
-	path=( ${${(P)1}[@]} )
-	hash -f
-	retval_kv=( ${(kv)commands[@]} )
-	commands=( ${(kv)saved_commands} )
 }
 
 function help {
@@ -30,9 +19,11 @@ function help {
 	echo "${fg_bold[green]}Available tools:${reset_color}"
 
 	local key REPLY
-	_help_all_in_path box_path
-	for key in ${(k)retval_kv[@]}; do
-		[[ ! -x ${retval_kv[$key]} ]] && continue
+	all_in_path box_path
+	typeset -A box_path_elems
+	box_path_elems=( ${(kv)retval_kv} )
+	for key in ${(k)box_path_elems}; do
+		[[ ! -x $box_path_elems[$key] ]] && continue
 		grab "$key"
 		"${key}_help"
 		while read -r; do

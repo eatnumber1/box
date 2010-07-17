@@ -12,12 +12,12 @@ if (( $+ENABLE_ASSERT )); then
 	}
 
 	function assert {
-		[[ $# -ge 1 ]] || exit 255
+		[[ $# -ge 1 ]] || return 255
 
 		if ! eval "$1"; then
 			shift
 			error "Assertion failed at $functrace[1]"
-			exit 255
+			return 255
 		fi
 	}
 else

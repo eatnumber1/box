@@ -25,7 +25,7 @@ fi
 function assert {
 	if ! eval "$*"; then
 		echo "Assertion failed during bootstrap" >&2
-		exit 255
+		return 255
 	fi
 }
 # End bootstrap functions
@@ -99,36 +99,38 @@ function _box_tool_destructor {
 }
 
 # Global Functions
-function path_search {
-	assert "[[ $# == 1 ]]"
-	assert "(( $+path_search_arg ))"
-
+function all_in_path {
+	assert "[[ $# -eq 1 ]]"
+	assert "(( ${(P)+${1}} ))"
+	
+	typeset -a target
+	target=( ${(P)${1}[@]} )
 	typeset -a path
 	typeset -A saved_commands
 	saved_commands=( ${(kv)commands} )
-	path=( "$path_search_arg[@]" )
+	path=( $target )
 	hash -f
-	typeset -i ret
-	if (( $+commands[$1] )); then
-		retval=( $commands[$1] )
-		ret=0
-	else
-		ret=1
-	fi
+	retval_kv=( ${(kv)commands} )
 	commands=( ${(kv)saved_commands} )
-	return $ret
+}
+
+function path_search {
+	assert "[[ $# == 2 ]]"
+
+	all_in_path "$1"
+	(( $+retval_kv[$2] )) || return 1
+	retval=( $retval_kv[$2] )
 }
 
 function grab {
 	assert "[[ $# -ne 0 ]]"
 	assert "[[ -n \"$*\" ]]"
 
-	local tool path_search_arg
+	local tool
 	for tool in "$@"; do
 		[[ -z "$tool" ]] && return 1
 		_box_tool_loaded "$tool" && continue
-		path_search_arg=( "$box_path[@]" )
-		if ! path_search "$tool"; then
+		if ! path_search box_path "$tool"; then
 			_box_zmodload "$tool" || return 1
 		else
 			_box_tool_constructor "$retval" || return 1
@@ -146,7 +148,7 @@ function exit {
 	done
 	unset -f _box_tool_destructor _box_zmodload _box_is_defined
 	unset -f _box_tool_constructor _box_run_if_defined
-	unset -f grab path_search
+	unset -f grab path_search all_in_path
 	unset box_loaded_tools box_tool_destructors help
 	unset PROGNAME box_path box_userdir retval
 	unset -f exit
