@@ -17,7 +17,7 @@ if (( $+ENABLE_ASSERT )); then
 		if ! eval "$1"; then
 			shift
 			error "Assertion failed at $functrace[1]"
-			return 255
+			exit 255
 		fi
 	}
 else

@@ -25,7 +25,7 @@ fi
 function assert {
 	if ! eval "$*"; then
 		echo "Assertion failed during bootstrap" >&2
-		return 255
+		exit 255
 	fi
 }
 # End bootstrap functions
