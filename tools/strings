@@ -35,9 +35,9 @@ function fold {
 	merge_short_arg args -b --bytes
 	merge_short_arg args -c --columns
 
-	foldargs+=( "--width=${args[--width]:-$cols}" )
-	(( $+args[--columns] )) || foldargs+=( "--spaces" )
-	(( $+args[--bytes] )) && foldargs+=( "--bytes" )
+	foldargs+=( "-w" "${args[--width]:-$cols}" )
+	(( $+args[--columns] )) || foldargs+=( "-s" )
+	(( $+args[--bytes] )) && foldargs+=( "-b" )
 	retval="$(command fold "$foldargs[@]" "$@")"
 }
 # vim:ft=zsh
