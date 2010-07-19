@@ -1,3 +1,9 @@
-Localization system.
-Automatic environment cleanup
-	Don't grab zshmodules.
+This is a basic todo file with a general idea of the things that I still want to
+do with box.
+
+1. Localization system.
+2. Automatic environment cleanup
+	- Don't grab zshmodules.
+3. Tool categorization system.
+
+# vim:tw=80
