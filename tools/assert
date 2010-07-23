@@ -4,11 +4,8 @@ function assert_help {
 
 if (( $+ENABLE_ASSERT )); then
 	function assert_constructor {
-		grab zsh/parameter messages
-	}
-
-	function assert_destructor {
-		unset -f assert
+		grab messages
+		# Also need zsh/parameter p:functrace
 	}
 
 	function assert {

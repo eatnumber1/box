@@ -2,10 +2,6 @@ function binary_constructor {
 	grab assert messages
 }
 
-function binary_destructor {
-	unset -f binary
-}
-
 function binary_help {
 	retval=( "Require some binary in the PATH" )
 }

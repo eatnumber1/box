@@ -7,11 +7,4 @@ function colors_help {
 	retval=( "Set environment variables for controlling color." )
 }
 
-function colors_destructor {
-	unset fg fg_bold fg_no_bold
-	unset bg bg_bold bg_no_bold
-	unset bold_color reset_color
-	unset colour color
-}
-
 # vim:ft=zsh

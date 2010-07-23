@@ -13,26 +13,30 @@ typeset retval
 # TODO: Add a facility for unloading these.
 zmodload -F zsh/parameter +p:commands
 
-typeset PROGNAME="${0##*/}"
+typeset -r PROGNAME="${0##*/}"
 
 typeset -a box_path
 typeset box_userdir="$HOME/.box"
-if [[ -d "$box_userdir" ]]; then
-	[[ -f "$box_userdir/config" ]] && source "$box_userdir/config"
-	[[ -d "$box_userdir/tools" ]] && box_path+=( "$box_userdir/tools" )
-fi
+[[ -d "$box_userdir" && -f "$box_userdir/config" ]] && source "$box_userdir/config"
 
-# Boostrap functions: These will be replaced once we are fully initialized.
-function assert {
-	if ! eval "$*"; then
-		echo "Assertion failed during bootstrap" >&2
+function _box_define_assert {
+	if [[ $# -ne 1 ]]; then
+		echo "Assertion failed generating assert" >&2
 		exit 255
 	fi
+	functions assert >/dev/null && unset -f assert
+	eval "function assert {
+		if ! eval \"\$*\"; then
+			echo \"Assertion failed during $1\" >&2
+			exit 255
+		fi
+	}"
 }
-# End bootstrap functions
 
-typeset -ga box_loaded_tools
-typeset -ga box_tool_destructors
+_box_define_assert bootstrap
+
+typeset -a _box_loaded_tools
+typeset -a _box_tool_destructors
 
 function _box_is_defined {
 	assert "[[ $# -eq 1 ]]"
@@ -42,68 +46,55 @@ function _box_is_defined {
 function _box_run_if_defined {
 	assert "[[ $# -eq 1 ]]"
 	_box_is_defined "$1" && "$1"
+	return 0
 }
 
 function _box_tool_constructor {
 	assert "[[ $# -eq 1 ]]"
-	local toolname="${1##*/}" toolfile="$1"
+	typeset toolname="${1##*/}" toolfile="$1"
 	assert "[[ -f \"$toolfile\" ]]"
 
 	source "$toolfile"
-	box_loaded_tools+=( "$toolname" )
+	_box_loaded_tools+=( "$toolname" )
 	_box_run_if_defined "${toolname}_constructor"
-	local fname="_box_${toolname}_destructor"
-	local cleanup="function $fname {; "
-	_box_is_defined "${toolname}_constructor" && cleanup+="unset -f ${toolname}_constructor; "
-	if _box_is_defined "${toolname}_destructor"; then
-		cleanup+="${toolname}_destructor; "
-		cleanup+="unset -f ${toolname}_destructor; "
-	fi
 	if ! _box_is_defined "${toolname}_help"; then
 		function ${toolname}_help {
 			retval=()
 		}
 	fi
-	cleanup+="unset -f ${toolname}_help; "
-	cleanup+="unset -f $fname; }"
-	eval "$cleanup"
-	box_tool_destructors+=( "$fname" )
 	return 0
 }
 
 function _box_tool_loaded {
 	assert "[[ $# -eq 1 ]]"
-	(( ${+box_loaded_tools[(r)*${1}]} ))
+	(( ${+_box_loaded_tools[(r)*${1}]} ))
 }
 
 function _box_zmodload {
 	assert "[[ $# -eq 1 ]]"
-
-	local modname="$1"
+	typeset modname="$1"
 	zmodload "$modname" 2>/dev/null || return 1
-	local fname="_box_${modname}_destructor"
+	typeset fname="_box_${modname}_destructor"
 	eval "function $fname {
 		zmodload -u $modname
-		unset -f $fname
 	}"
-	box_tool_destructors+=( "$fname" )
-	box_loaded_tools+="$modname"
+	_box_tool_destructors+=( "$fname" )
+	_box_loaded_tools+="$modname"
 }
 
 function _box_tool_destructor {
-	# Can't call assert here because this is called late enough that assert
-	# might have been undefined already
-
-	$box_tool_destructors[$1]
-	box_tool_destructors[$1]=()
-	box_loaded_tools[$1]=()
+	assert "[[ $# -eq 1 ]]"
+	_box_run_if_defined "${_box_loaded_tools[$1]}_destructor"
+	$_box_tool_destructors[$1]
+	[[ $_box_loaded_tools[$1] == "assert" ]] && _box_define_assert shutdown
+	_box_tool_destructors[$1]=()
+	_box_loaded_tools[$1]=()
 }
 
 # Global Functions
 function all_in_path {
 	assert "[[ $# -eq 1 ]]"
 	assert "(( ${(P)+${1}} ))"
-	
 	typeset -a target
 	target=( ${(P)${1}[@]} )
 	typeset -a path
@@ -117,7 +108,6 @@ function all_in_path {
 
 function path_search {
 	assert "[[ $# == 2 ]]"
-
 	all_in_path "$1"
 	(( $+retval_kv[$2] )) || return 1
 	retval=( $retval_kv[$2] )
@@ -126,8 +116,7 @@ function path_search {
 function grab {
 	assert "[[ $# -ne 0 ]]"
 	assert "[[ -n \"$*\" ]]"
-
-	local tool
+	typeset tool
 	for tool in "$@"; do
 		[[ -z "$tool" ]] && return 1
 		_box_tool_loaded "$tool" && continue
@@ -141,20 +130,14 @@ function grab {
 
 function exit {
 	unsetopt xtrace
-	trap 'echo "Error during exit" >&2; builtin exit 1' ZERR
+	unset -f exit
+	trap 'echo "Error during exit" >&2; exit 1' ZERR
 	assert "[[ $# -le 1 ]]"
 	typeset -i i
-	for (( i = $#box_tool_destructors; i > 0; i-- )); do
+	for (( i = $#_box_loaded_tools; i > 0; i-- )); do
 		_box_tool_destructor $i
 	done
-	unset -f _box_tool_destructor _box_zmodload _box_is_defined
-	unset -f _box_tool_constructor _box_run_if_defined
-	unset -f grab path_search all_in_path
-	unset box_loaded_tools box_tool_destructors help
-	unset PROGNAME box_path box_userdir retval
-	unset -f exit
-	zprof
-	builtin exit ${1:-0}
+	exit ${1:-0}
 }
 # End Global Functions
 

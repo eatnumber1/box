@@ -2,12 +2,6 @@ function messages_constructor {
 	grab colors assert
 }
 
-function messages_destructor {
-	unset -f error
-	unset -f warning
-	unset -f info
-}
-
 function error {
 	assert "[[ $# -ne 0 ]]"
 	echo "${fg_bold[red]}*${reset_color} $*" >&2

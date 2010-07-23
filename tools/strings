@@ -4,10 +4,6 @@ function strings_constructor {
 	(( $+COLUMNS )) || grab zsh/terminfo
 }
 
-function strings_destructor {
-	unset -f fold get_columns merge_short_arg
-}
-
 function get_columns {
 	if ! (( $+COLUMNS )); then
 		retval_i=$(echoti cols 2>/dev/null || :)

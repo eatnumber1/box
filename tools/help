@@ -2,10 +2,6 @@ function help_constructor {
 	grab messages zsh/parameter strings
 }
 
-function help_destructor {
-	unset -f help usage
-}
-
 function help_help {
 	retval=( "Display this help text" )
 }

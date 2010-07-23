@@ -3,10 +3,6 @@ function mount_constructor {
 	binary mount
 }
 
-function mount_destructor {
-	unset -f mounted
-}
-
 function mounted {
 	assert "[[ $# -eq 2 ]]"
 	local mountpoint="$1" fstype="$2" REPLY
