@@ -9,13 +9,19 @@ if (( $+ENABLE_ASSERT )); then
 	}
 
 	function assert {
-		[[ $# -ge 1 ]] || return 255
-
-		if ! eval "$1"; then
-			shift
-			error "Assertion failed at $functrace[1]"
-			exit 255
+		if [[ $# -lt 1 ]]; then
+			echo "Assertion failed inside assert" >&2
+			throw AssertionError
 		fi
+
+		typeset i
+		for i in "$@"; do
+			if ! eval "$i"; then
+				shift
+				error "Assertion failed at $functrace[1]"
+				throw AssertionError
+			fi
+		done
 	}
 else
 	function assert {

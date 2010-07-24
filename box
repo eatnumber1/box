@@ -2,9 +2,9 @@
 emulate -L zsh
 #setopt xtrace
 setopt err_exit
-zmodload zsh/zprof
 
-trap 'echo "Command returned nonzero exit code" >&2; exit 1' ZERR
+autoload -U throw
+trap 'echo "Command returned nonzero exit code" >&2; throw NonZeroExitError' ZERR
 
 typeset -A retval_kv
 typeset -i retval_i
@@ -12,6 +12,7 @@ typeset retval
 
 # TODO: Add a facility for unloading these.
 zmodload -F zsh/parameter +p:commands
+autoload -U catch
 
 typeset -r PROGNAME="${0##*/}"
 
@@ -22,13 +23,13 @@ typeset box_userdir="$HOME/.box"
 function _box_define_assert {
 	if [[ $# -ne 1 ]]; then
 		echo "Assertion failed generating assert" >&2
-		exit 255
+		throw AssertionError
 	fi
 	functions assert >/dev/null && unset -f assert
 	eval "function assert {
 		if ! eval \"\$*\"; then
 			echo \"Assertion failed during $1\" >&2
-			exit 255
+			throw AssertionError
 		fi
 	}"
 }
@@ -131,7 +132,7 @@ function grab {
 function exit {
 	unsetopt xtrace
 	unset -f exit
-	trap 'echo "Error during exit" >&2; exit 1' ZERR
+	trap 'echo "Error during exit" >&2; throw NonZeroExitError' ZERR
 	assert "[[ $# -le 1 ]]"
 	typeset -i i
 	for (( i = $#_box_loaded_tools; i > 0; i-- )); do
@@ -144,7 +145,7 @@ function exit {
 trap 'exit $?' EXIT
 
 grab messages
-trap 'error "Command returned nonzero exit code"; exit 1' ZERR
+trap 'error "Command returned nonzero exit code"; throw NonZeroExitError' ZERR
 grab assert
 
 if [[ $PROGNAME == "box" ]]; then
@@ -163,11 +164,11 @@ if [[ $PROGNAME == "box" ]]; then
 	if [[ -z "$1" ]] || ! grab "$1"; then
 		grab help
 		usage >&2
-		exit 1
+		throw InvalidInvocationException
 	fi
 	if ! _box_is_defined "$1"; then
 		error "Module $1 not runnable"
-		exit 1
+		throw NotRunnableException
 	fi
 	"$@"
 else
@@ -175,7 +176,7 @@ else
 	grab $module
 	if ! _box_is_defined "$module"; then
 		error "Module $module not runnable"
-		exit 1
+		throw NotRunnableException
 	fi
 	$module "$@"
 	unset module
