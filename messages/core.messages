@@ -1,0 +1,7 @@
+assert_help="Assert some condition"
+binary_help="Require some binary in the PATH"
+colors_help="Set environment variables for controlling color."
+help_help="Display this help text"
+i18n_help="Get strings based upon a key"
+
+# vim:ft=zsh

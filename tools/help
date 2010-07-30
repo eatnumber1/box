@@ -1,9 +1,10 @@
 function help_constructor {
-	grab messages strings
+	grab messages strings i18n
+	import_message_bundle core
 }
 
 function help_help {
-	retval=( "Display this help text" )
+	get_message "help_help"
 }
 
 function help {

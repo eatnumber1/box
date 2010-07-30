@@ -1,13 +1,17 @@
+function assert_constructor {
+	grab i18n
+	import_message_bundle core
+	if (( $+ENABLE_ASSERT )); then
+		grab messages
+		zmodload -F zsh/parameter +p:functrace
+	fi
+}
+
 function assert_help {
-	retval=( "Assert some condition" )
+	get_message "assert_help"
 }
 
 if (( $+ENABLE_ASSERT )); then
-	function assert_constructor {
-		grab messages
-		# Also need zsh/parameter p:functrace
-	}
-
 	function assert {
 		if [[ $# -lt 1 ]]; then
 			echo "Assertion failed inside assert" >&2

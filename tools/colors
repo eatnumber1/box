@@ -4,7 +4,7 @@ function colors_constructor {
 }
 
 function colors_help {
-	retval=( "Set environment variables for controlling color." )
+	get_message "colors_help"
 }
 
 # vim:ft=zsh

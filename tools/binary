@@ -1,9 +1,10 @@
 function binary_constructor {
-	grab assert messages
+	grab assert messages i18n
+	import_message_bundle core
 }
 
 function binary_help {
-	retval=( "Require some binary in the PATH" )
+	get_message "binary_help"
 }
 
 function binary {

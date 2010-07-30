@@ -16,7 +16,10 @@ autoload -U catch
 
 typeset -r PROGNAME="${0##*/}"
 
+typeset -r BOX_HOME="$HOME/src/box"
 typeset -a box_path
+box_path=( "$BOX_HOME/tools" )
+
 typeset box_userdir="$HOME/.box"
 [[ -d "$box_userdir" && -f "$box_userdir/config" ]] && source "$box_userdir/config"
 
