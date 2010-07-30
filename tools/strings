@@ -1,7 +1,8 @@
 function strings_constructor {
-	grab binary zsh/zutil assert
+	grab binary assert
 	binary fold
-	(( $+COLUMNS )) || grab zsh/terminfo
+	(( $+COLUMNS )) || zmodload -F zsh/terminfo +b:echoti
+	zmodload -F zsh/zutil +b:zparseopts
 }
 
 function get_columns {

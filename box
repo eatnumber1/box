@@ -71,18 +71,6 @@ function _box_tool_loaded {
 	(( ${+_box_loaded_tools[(r)*${1}]} ))
 }
 
-function _box_zmodload {
-	assert "[[ $# -eq 1 ]]"
-	typeset modname="$1"
-	zmodload "$modname" 2>/dev/null || return 1
-	typeset fname="_box_${modname}_destructor"
-	eval "function $fname {
-		zmodload -u $modname
-	}"
-	_box_tool_destructors+=( "$fname" )
-	_box_loaded_tools+="$modname"
-}
-
 function _box_tool_destructor {
 	assert "[[ $# -eq 1 ]]"
 	_box_run_if_defined "${_box_loaded_tools[$1]}_destructor"
@@ -108,7 +96,7 @@ function all_in_path {
 }
 
 function path_search {
-	assert "[[ $# == 2 ]]"
+	assert "[[ $# -eq 2 ]]"
 	all_in_path "$1"
 	(( $+retval_kv[$2] )) || return 1
 	retval=( $retval_kv[$2] )
@@ -121,11 +109,8 @@ function grab {
 	for tool in "$@"; do
 		[[ -z "$tool" ]] && return 1
 		_box_tool_loaded "$tool" && continue
-		if ! path_search box_path "$tool"; then
-			_box_zmodload "$tool" || return 1
-		else
-			_box_tool_constructor "$retval" || return 1
-		fi
+		path_search box_path "$tool" || return 1
+		_box_tool_constructor "$retval" || return 1
 	done
 }
 
@@ -149,7 +134,7 @@ trap 'error "Command returned nonzero exit code"; throw NonZeroExitError' ZERR
 grab assert
 
 if [[ $PROGNAME == "box" ]]; then
-	grab zsh/zutil
+	zmodload -F zsh/zutil +b:zparseopts
 	zparseopts -E -K -D h=help -help=help
 
 	[[ "$1" == "help" ]] && typeset help

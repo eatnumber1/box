@@ -1,5 +1,5 @@
 function help_constructor {
-	grab messages zsh/parameter strings
+	grab messages strings
 }
 
 function help_help {
