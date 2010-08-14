@@ -136,8 +136,10 @@ grab messages
 trap 'error "Command returned nonzero exit code"; throw NonZeroExitError' ZERR
 grab assert
 
+zmodload -F zsh/zutil +b:zparseopts
+zparseopts -K -D d=debug -debug=debug
+
 if [[ $PROGNAME == "box" ]]; then
-	zmodload -F zsh/zutil +b:zparseopts
 	zparseopts -E -K -D h=help -help=help
 
 	[[ "$1" == "help" ]] && typeset help
@@ -158,6 +160,7 @@ if [[ $PROGNAME == "box" ]]; then
 		error "Module $1 not runnable"
 		throw NotRunnableException
 	fi
+	(( $+debug )) && setopt xtrace
 	"$@"
 else
 	typeset module="${0##*/}"
@@ -166,6 +169,8 @@ else
 		error "Module $module not runnable"
 		throw NotRunnableException
 	fi
+	(( $+debug )) && setopt xtrace
 	$module "$@"
+	(( $+debug )) && unsetopt xtrace
 	unset module
 fi
