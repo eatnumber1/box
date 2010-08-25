@@ -23,7 +23,7 @@ function help {
 	typeset -A box_path_elems
 	box_path_elems=( ${(kv)retval_kv} )
 	for key in ${(k)box_path_elems}; do
-		[[ ! -x $box_path_elems[$key] ]] && continue
+		[[ ! -f $box_path_elems[$key] || ! -x $box_path_elems[$key] || ${${box_path_elems[$key]}[1]} == "." ]] && continue
 		grab "$key"
 		"${key}_help"
 		fold --width $cols <<< "$retval"

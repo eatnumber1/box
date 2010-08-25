@@ -22,7 +22,7 @@ if (( $+ENABLE_ASSERT )); then
 		for i in "$@"; do
 			if ! eval "$i"; then
 				shift
-				error "Assertion failed at $functrace[1]"
+				error "Assertion $i failed at $functrace[1]"
 				throw AssertionError
 			fi
 		done

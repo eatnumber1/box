@@ -30,10 +30,13 @@ function _box_define_assert {
 	fi
 	functions assert >/dev/null && unset -f assert
 	eval "function assert {
-		if ! eval \"\$*\"; then
-			echo \"Assertion failed during $1\" >&2
-			throw AssertionError
-		fi
+		typeset i
+		for i in \"\$@\"; do
+			if ! eval \"\$i\"; then
+				echo \"Assertion failed during $1\" >&2
+				throw AssertionError
+			fi
+		done
 	}"
 }
 
@@ -42,26 +45,21 @@ _box_define_assert bootstrap
 typeset -a _box_loaded_tools
 typeset -a _box_tool_destructors
 
-function _box_is_defined {
-	assert "[[ $# -eq 1 ]]"
-	(( ${+functions[$1]} ))
-}
-
 function _box_run_if_defined {
 	assert "[[ $# -eq 1 ]]"
-	_box_is_defined "$1" && "$1"
+	is_defined -f "$1" && "$1"
 	return 0
 }
 
 function _box_tool_constructor {
 	assert "[[ $# -eq 1 ]]"
 	typeset toolname="${1##*/}" toolfile="$1"
-	assert "[[ -f \"$toolfile\" ]]"
+	assert "[[ -f \"$toolfile\" && -x \"$toolfile\" ]]"
 
 	source "$toolfile"
 	_box_loaded_tools+=( "$toolname" )
 	_box_run_if_defined "${toolname}_constructor"
-	if ! _box_is_defined "${toolname}_help"; then
+	if ! is_defined -f "${toolname}_help"; then
 		function ${toolname}_help {
 			retval=()
 		}
@@ -84,9 +82,62 @@ function _box_tool_destructor {
 }
 
 # Global Functions
+function is_defined {
+	typeset -a args
+	zparseopts -D -K -E -a args f+: -function+: s+: -scalar+: a+: -array+: i+: -integer+: d+: -float+: m+: -association+
+	assert "[[ \$(( ${#args} % 2 )) -eq 0 ]]" "[[ $# -eq 0 ]]"
+	typeset -i i i2 ret
+	for (( i=1; i<${#args}; i+=2 )); do
+		let i2=$i+1
+		if [[ "$args[$i]" == "--function" || "$args[$i]" == "-f" ]]; then
+			if ! (( ${+functions[${args[$i2]}]} )); then
+				ret=1
+				break
+			fi
+		else
+			typeset -a param_flags
+			param_flags=( ${(s:-:)parameters[${args[$i2]}]} )
+			case "$args[$i]" in
+				-s|--scalar)
+					if [[ ${param_flags[1]} != "scalar" ]]; then
+						ret=1
+						break
+					fi
+					;;
+				-a|--array)
+					if [[ ${param_flags[1]} != "array" ]]; then
+						ret=1
+						break
+					fi
+					;;
+				-i|--integer)
+					if [[ ${param_flags[1]} != "integer" ]]; then
+						ret=1
+						break
+					fi
+					;;
+				-d|--float)
+					if [[ ${param_flags[1]} != "float" ]]; then
+						ret=1
+						break
+					fi
+					;;
+				-m|--association)
+					if [[ ${param_flags[1]} != "association" ]]; then
+						ret=1
+						break
+					fi
+					;;
+				*)
+					assert false
+			esac
+		fi
+	done
+	return $ret
+}
+
 function all_in_path {
-	assert "[[ $# -eq 1 ]]"
-	assert "(( ${(P)+${1}} ))"
+	assert "[[ $# -eq 1 ]]" "[[ -n \"$1\" ]]" "(( ${(P)+${1}} ))"
 	typeset -a target
 	target=( ${(P)${1}[@]} )
 	typeset -a path
@@ -99,7 +150,7 @@ function all_in_path {
 }
 
 function path_search {
-	assert "[[ $# -eq 2 ]]"
+	assert "[[ $# -eq 2 ]]" "[[ -n \"$1\" && -n \"$2\" ]]"
 	all_in_path "$1"
 	(( $+retval_kv[$2] )) || return 1
 	retval=( $retval_kv[$2] )
@@ -113,6 +164,7 @@ function grab {
 		[[ -z "$tool" ]] && return 1
 		_box_tool_loaded "$tool" && continue
 		path_search box_path "$tool" || return 1
+		assert "[[ -f "$retval" && -x "$retval" ]]"
 		_box_tool_constructor "$retval" || return 1
 	done
 }
@@ -156,7 +208,7 @@ if [[ $PROGNAME == "box" ]]; then
 		usage >&2
 		throw InvalidInvocationException
 	fi
-	if ! _box_is_defined "$1"; then
+	if ! is_defined -f "$1"; then
 		error "Module $1 not runnable"
 		throw NotRunnableException
 	fi
@@ -165,7 +217,7 @@ if [[ $PROGNAME == "box" ]]; then
 else
 	typeset module="${0##*/}"
 	grab $module
-	if ! _box_is_defined "$module"; then
+	if ! is_defined -f "$module"; then
 		error "Module $module not runnable"
 		throw NotRunnableException
 	fi

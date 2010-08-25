@@ -14,20 +14,19 @@ function get_columns {
 	fi
 }
 
-function merge_short_arg {
-	assert "[[ $# -eq 3 ]]"
-	assert "(( \$+$1 ))"
-	eval "(( \$+${1}[$2] ))" && eval "args[$3]=\"\$$1[$2]\""
+function _strings_merge_short_arg {
+	assert "[[ $# -eq 3 ]]" "(( \$+$1 ))"
+	eval "(( \$+${1}[$2] ))" && eval "${1}[${3}]=\"\$${1}[$2]\""
 }
 
 function fold {
 	typeset -i cols
 	typeset -A args
 	zparseopts -K -D -A args m: -margin: b -bytes s -spaces w: -width:
-	merge_short_arg args -w --width
-	merge_short_arg args -m --margin
-	merge_short_arg args -b --bytes
-	merge_short_arg args -s --spaces
+	_strings_merge_short_arg args -w --width
+	_strings_merge_short_arg args -m --margin
+	_strings_merge_short_arg args -b --bytes
+	_strings_merge_short_arg args -s --spaces
 
 	if (( $+args[--width] )); then
 		cols=$args[--width]
