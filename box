@@ -16,12 +16,16 @@ autoload -U catch
 
 typeset -r PROGNAME="${0##*/}"
 
-typeset -r BOX_HOME="$HOME/src/box"
 typeset -a box_path
-box_path=( "$BOX_HOME/tools" )
 
 typeset box_userdir="$HOME/.box"
 [[ -d "$box_userdir" && -f "$box_userdir/config" ]] && source "$box_userdir/config"
+
+if ! (( $+BOX_HOME )); then
+	echo "BOX_HOME must be defined" >&2
+	exit 1
+fi
+box_path+=( "$BOX_HOME/tools" )
 
 function _box_define_assert {
 	if [[ $# -ne 1 ]]; then
@@ -197,6 +201,7 @@ if [[ $PROGNAME == "box" ]]; then
 	[[ "$1" == "help" ]] && typeset help
 	if (( $+help )); then
 		grab help
+		(( $+debug )) && setopt xtrace
 		usage
 		echo
 		help
